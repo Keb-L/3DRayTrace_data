@@ -25,15 +25,15 @@
         End Set
     End Property
 
-    Public Function axisIntersectionZ(val As Double) As Point3D
-        Dim delZ As Double = val - myOrigin.z ' calculates difference
-        Dim dXZ As Double = myVector.myx / myVector.myZ
-        Dim dYZ As Double = myVector.myY / myVector.myZ
+    Public Function axisIntersectionY(val As Double) As Point3D
+        Dim delY As Double = val - myOrigin.y ' calculates difference
+        'Dim dXZ As Double = myVector.myx / myVector.myZ
+        'Dim dYZ As Double = myVector.myY / myVector.myZ
 
-        Dim scale As Double = delZ / myVector.myZ ' calculates scaling
+        Dim scale As Double = delY / myVector.myY ' calculates scaling
 
 
-        Return New Point3D(myOrigin.x + myVector.myX * scale, myOrigin.y + myVector.myY * scale, val)
+        Return New Point3D(myOrigin.x + myVector.myX * scale, val, myOrigin.z + myVector.myZ * scale)
         ' Return New Point3D(myOrigin.x + dXZ * delZ, myOrigin.y + dYZ * delZ, val)
     End Function
 

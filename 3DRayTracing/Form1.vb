@@ -98,10 +98,10 @@ Public Class Form1
     Private Sub UpdateForm()
 
         recalculate()
+        resetSeriesPt()
+        resetTxtBx()
 
         Try
-            resetSeriesPt()
-
             coreRad = bxCoreRad.Value / 1000
             samples = numSample.Value
             'Creating Lens1
@@ -112,6 +112,7 @@ Public Class Form1
             Lens3 = New Sphere(New Point3D(bxL3X.Value, bxL3Y.Value, bxL3Z.Value), bxL3R.Value)
 
             'Populating RayCollections
+            ' PHYSICS SPHERICAL COORDINATES
             '   y
             '   |
             '   o
@@ -134,11 +135,15 @@ Public Class Form1
             Dim angleIncid, transAngle As Decimal
             Dim intersect As Point3D
 
-            Dim r1_angle = InitAngle.Value
+            Dim r1_angle As Double = InitAngle.Value
 
             'v = <sin theta * cos phi, sin theta * sin phi, cos theta)
-            'r1 = New Ray(origin, New Vector(Math.Cos(r1_angle), Math.Sin(r1_angle), 1))
-            r1 = New Ray(origin, New Vector(0, Math.Sin(r1_angle), Math.Cos(r1_angle)))
+            'r1 = New Ray(origin, New Vector(0, Math.Cos(r1_angle), Math.Sin(r1_angle)))
+
+            r1 = New Ray(origin, New Vector(Math.Cos(Math.PI / 2) * Math.Sin(Math.PI / 2 - r1_angle),
+                                            Math.Sin(Math.PI / 2) * Math.Sin(Math.PI / 2 - r1_angle),
+                                                                    Math.Cos(Math.PI / 2 - r1_angle)))
+            'r1 = New Ray(origin, New Vector(0, Math.Sin(r1_angle), Math.Cos(r1_angle)))
 
             i1 = findIntersect(r1, Lens1)
             r1 = New Ray(origin, Vector.pt2pt(i1, origin))
@@ -151,25 +156,25 @@ Public Class Form1
 
             'reflect
             r2 = reflect(r1, i1, o1, normal)
-            retInt1 = r2.axisIntersectionZ(r1.myOrigin.z)
+            retInt1 = r2.axisIntersectionY(r1.myOrigin.y)
             r2 = New Ray(i1, Vector.pt2pt(retInt1, i1))
 
             nVect = r2.myVector ' Settings Reference Vector 
 
-            centerTheta1 = snellLaw(findAngle2(r2, orthVect), 1, 1.5)
+            centerTheta1 = snellLaw(findAngle2(r2, orthVect), bxN1.Value, bxN2.Value)
             bxFbrAngR.Text = Math.Round(centerTheta1, 8)
 
             intersect = Point3D.addVector(r2.myVector, r2.myOrigin)
             centerRay1 = refract(r2, intersect, New Ray(intersect, orthVect), plnVect, findAngle2(r2, orthVect), snellLaw(findAngle2(r2, orthVect), 1, 1.5))
             centerIntersect1 = retInt1
 
-            EmiDist.Series("Normal").Points.AddXY(origin.x, origin.y)
+            EmiDist.Series("Normal").Points.AddXY(origin.x, origin.z)
             EmiDist.Series("Normal").Points.Item(EmiDist.Series("Normal").Points.Count - 1).ToolTip =
             EmiDist.Series("Normal").Points.Item(EmiDist.Series("Normal").Points.Count - 1).ToString
 
-            RefDist.Series("Normal").Points.AddXY(retInt1.x, retInt1.y)
+            RefDist.Series("Normal").Points.AddXY(retInt1.x, retInt1.z)
             RefDist.Series("Normal").Color = Color.LimeGreen
-            RefDist.Series("All").Points.AddXY(retInt1.x, retInt1.y)
+            RefDist.Series("All").Points.AddXY(retInt1.x, retInt1.z)
 
 
             r3 = refract(r1, i1, o1, normal, angleIncid, transAngle)
@@ -191,7 +196,7 @@ Public Class Form1
             transAngle = snellLaw(angleIncid, bxN2.Value, bxN1.Value)
 
             r5 = refract(r4, i3, o3, normal3, angleIncid, transAngle)
-            retInt2 = r5.axisIntersectionZ(r1.myOrigin.z)
+            retInt2 = r5.axisIntersectionY(r1.myOrigin.y)
             r5 = New Ray(i3, Vector.pt2pt(i3, retInt2))
 
             nVect2 = r5.myVector
@@ -217,7 +222,7 @@ Public Class Form1
             'bxCtrR.Text = Math.Round(ctrlL, 8).ToString
             'bxCtrT.Text = Math.Round(ctrlL2, 8).ToString
 
-            TranDist.Series("Normal").Points.AddXY(retInt2.x, retInt2.y)
+            TranDist.Series("Normal").Points.AddXY(retInt2.x, retInt2.z)
 
             OutToRef.Series("Normal").Points.AddXY(0, ctrlL)
             OutToTran.Series("Normal").Points.AddXY(0, ctrlL2)
@@ -235,15 +240,16 @@ Public Class Form1
                 Dim cent As Point3D = New Point3D(origin.x + coreRadArr(i) * Math.Cos(thetaArr(i)), ' randT
                                                   origin.y + coreRadArr(i) * Math.Sin(thetaArr(i)),
                                                   origin.z)
+                ' Physics spherical coordinates
+                Dim theta = Math.PI / 2 - r1_angle + aptArr(i)
+                r1 = New Ray(cent, New Vector(Math.Cos(phiArr(i)) * Math.Sin(theta),
+                                              Math.Sin(phiArr(i)) * Math.Sin(theta),
+                                                                    Math.Cos(theta)))
 
-                'r1 = New Ray(cent, New Vector(Math.Cos(r1_angle) + Math.Sin(aptArr(i)) * Math.Cos(phiArr(i)),
-                '                              Math.Sin(r1_angle) + Math.Sin(aptArr(i)) * Math.Sin(phiArr(i)),
-                '                              Math.Cos(aptArr(i))))
 
-
-                r1 = New Ray(cent, New Vector(Math.Cos(r1_angle + aptArr(i)) * Math.Sin(phiArr(i)),
-                                              Math.Sin(r1_angle + aptArr(i)),
-                                              Math.Cos(r1_angle + aptArr(i)) * Math.Cos(phiArr(i))))
+                'r1 = New Ray(cent, New Vector(Math.Cos(r1_angle + aptArr(i)) * Math.Sin(phiArr(i)),
+                '                              Math.Sin(r1_angle + aptArr(i)),
+                '                              Math.Cos(r1_angle + aptArr(i)) * Math.Cos(phiArr(i))))
 
                 'Console.WriteLine(r1.ToString)
                 EmiDist.Series("Valid").Points.AddXY(cent.x, cent.y)
@@ -259,18 +265,18 @@ Public Class Form1
                 'reflect
                 r2 = reflect(r1, i1, o1, normal)
 
-                retInt1 = r2.axisIntersectionZ(r1.myOrigin.z)
+                retInt1 = r2.axisIntersectionY(r1.myOrigin.y)
                 r2 = New Ray(r2.myOrigin, Vector.pt2pt(retInt1, r2.myOrigin))
 
                 length = r1.myVector.getLength * bxN1.Value + r2.myVector.getLength * bxN1.Value
 
                 If refractFiber(r2, retInt1, centerRay1, centerIntersect1, bxN1.Value, bxN2.Value) Then
 
-                    RefDist.Series("Valid").Points.AddXY(retInt1.x, retInt1.y)
+                    RefDist.Series("Valid").Points.AddXY(retInt1.x, retInt1.z)
                     RefDist.Series("Valid").Points.Item(RefDist.Series("Valid").Points.Count - 1).ToolTip =
                      RefDist.Series("Valid").Points.Item(RefDist.Series("Valid").Points.Count - 1).ToString
 
-                    RefDist.Series("All").Points.AddXY(retInt1.x, retInt1.y)
+                    RefDist.Series("All").Points.AddXY(retInt1.x, retInt1.z)
 
                     OutToRef.Series("Normal").Points.AddXY(i, length)
                     OutToRef.Series("All").Points.AddXY(i, length)
@@ -280,11 +286,14 @@ Public Class Form1
                     End If
 
                 Else
-                    RefDist.Series("Invalid").Points.AddXY(retInt1.x, retInt1.y)
+                    RefDist.Series("Invalid").Points.AddXY(retInt1.x, retInt1.z)
                     RefDist.Series("Invalid").Points.Item(RefDist.Series("Invalid").Points.Count - 1).ToolTip =
                         RefDist.Series("Invalid").Points.Item(RefDist.Series("Invalid").Points.Count - 1).ToString
-                    RefDist.Series("All").Points.AddXY(retInt1.x, retInt1.y)
-
+                    RefDist.Series("All").Points.AddXY(retInt1.x, retInt1.z)
+                    If (Math.Abs(retInt1.x) > 1 Or Math.Abs(retInt1.z)) Then
+                        Debug.Print(r2.ToString)
+                        Debug.Print(retInt1.toString)
+                    End If
                     If (btnLength.Checked) Then
                         lengths(1, i) = length
                     End If
@@ -311,7 +320,11 @@ Public Class Form1
                 transAngle = snellLaw(angleIncid, bxN2.Value, bxN1.Value)
 
                 r5 = refract(r4, i3, o3, normal3, angleIncid, transAngle)
-                retInt2 = r5.axisIntersectionZ(r1.myOrigin.z)
+                retInt2 = r5.axisIntersectionY(r1.myOrigin.y)
+
+                If (r5.myVector.myX > 1) Then
+                    Debug.WriteLine(r5.ToString)
+                End If
 
                 r5 = New Ray(i3, Vector.pt2pt(i3, retInt2))
 
@@ -323,7 +336,7 @@ Public Class Form1
                     TranDist.Series("Valid").Points.Item(TranDist.Series("Valid").Points.Count - 1).ToolTip =
                         TranDist.Series("Valid").Points.Item(TranDist.Series("Valid").Points.Count - 1).ToString
 
-                    TranDist.Series("All").Points.AddXY(retInt2.x, retInt2.y)
+                    TranDist.Series("All").Points.AddXY(retInt2.x, retInt2.z)
 
                     OutToTran.Series("Normal").Points.AddXY(i, length)
                     OutToTran.Series("All").Points.AddXY(i, length)
@@ -334,10 +347,10 @@ Public Class Form1
                     End If
 
                 Else
-                    TranDist.Series("Invalid").Points.AddXY(retInt2.x, retInt2.y)
+                    TranDist.Series("Invalid").Points.AddXY(retInt2.x, retInt2.z)
                     TranDist.Series("Invalid").Points.Item(TranDist.Series("Invalid").Points.Count - 1).ToolTip =
                     TranDist.Series("Invalid").Points.Item(TranDist.Series("Invalid").Points.Count - 1).ToString
-                    TranDist.Series("All").Points.AddXY(retInt2.x, retInt2.y)
+                    TranDist.Series("All").Points.AddXY(retInt2.x, retInt2.z)
 
                     If (btnLength.Checked) Then
                         lengths(3, i) = length
@@ -559,6 +572,7 @@ Public Class Form1
         vx = incomingRay.myVector.myX
         vy = incomingRay.myVector.myY
         vz = incomingRay.myVector.myZ
+
         a = vx ^ 2 + vy ^ 2 + vz ^ 2
         b = 2 * (vx * (x1 - xc) + vy * (y1 - yc) + vz * (z1 - zc))
         c = (x1 - xc) ^ 2 + (y1 - yc) ^ 2 + (z1 - zc) ^ 2 - Lens.myRadius ^ 2
@@ -626,7 +640,10 @@ Public Class Form1
             Return New Ray(intersect, r1.myVector.negative)
         End If
 
+        norm = norm.normalize()
+
         Dim x, y, z, u, v, w As Double
+
         x = o1.myVector.myX
         y = o1.myVector.myY
         z = o1.myVector.myZ
